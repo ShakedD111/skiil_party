@@ -5,9 +5,11 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const express = require('express');
 const mongoose = require('mongoose');
+const dbConnection = require('./config/mongoConnection');
 
 
 //db connection
+dbConnection.connectDB();
 
 //create server
 const app = express();
@@ -28,7 +30,7 @@ app.use('/*', (req, res, next) => {
 ////app.use('/', require('./routers/mainRoute'));
 
 //routes for th API's
-////app.use('/api/users', require('./routers/api/usersAPI'));
+app.use('/api/users', require('./routers/api/usersAPI'));
 ////app.use('/api/tournaments', require('./routers/api/tournamentsAPI'));
 ////app.use('/api/parties', require('./routers/api/partiesAPI'));
 
@@ -37,7 +39,7 @@ app.use('/*', (req, res, next) => {
 
 
 //errors hendler
-app.get('*', (req,res) =>{
+app.get('*', (req,res) => {
     res.status(404);
     
     if (req.accepts('html'))
@@ -52,10 +54,11 @@ app.get('*', (req,res) =>{
 });
 
 //startServer
-mongoose.connection.once('open', () => {
+/*mongoose.connection.once('open', () => {
     console.log("connected to mongoDB");
     app.listen(3000, () => {
         console.log('Server is running on port 3000');
     });
-})
-console.log("yey:)");
+})*/
+
+dbConnection.checkConnection(app);
