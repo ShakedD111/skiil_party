@@ -1,4 +1,6 @@
 //const express = require('express');
+const schema = require('../schemas/usersModel');
+
 
 const userInfo = async (req, res) => {
     /*console.log(req.body);
