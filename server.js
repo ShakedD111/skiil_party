@@ -45,11 +45,11 @@ app.get('*', (req,res) => {
     if (req.accepts('html'))
     {
         //need to be sendFile
-        res.statusCode(400).send('stupid');//will need to send the error page (send file)
+        res.status(400).send('stupid');//will need to send the error page (send file)
     } else if (req.accepts('json')) {
-        res.statusCode(400).json({ 'error' : '404 - not found'});
+        res.status(400).json({ 'error' : '404 - not found'});
     } else {
-        res.statusCode(400).send('stupid');
+        res.status(400).send('stupid');
     }
 });
 
