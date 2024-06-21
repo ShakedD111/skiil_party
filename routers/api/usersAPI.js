@@ -24,6 +24,15 @@ router.route('/userModify')
         .put() // Update an existing user
         .delete(); // Delete an existing user
 
+        //in update:::::
+ //check valid connections
+
+    //check valid tournaments
+
+    //check valid tournaments
+
+    //check valid parties
+
 
 router.route('/userBasicInfo')
         .get(usersHandler.userInfo);

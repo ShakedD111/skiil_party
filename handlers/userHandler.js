@@ -1,7 +1,17 @@
 //const express = require('express');
 const usersSchema = require('../schemas/usersSchemaModels');
 
-
+/**
+ * Checks if a user with the specified name (username or email) and password exists in the database.
+ * 
+ * @param {string} name - The username or email of the user to check.
+ * @param {string} password - The password of the user to check.
+ * @returns {Promise<Object>} - A promise that resolves to an object containing the result of the check:
+ *                              - valid: The user document if found, otherwise null.
+ *                              - error: Boolean indicating if an error occurred.
+ *                              - status: HTTP status code indicating the result (200 for success, 404 for not found, 500 for error).
+ *                              - msg: A message describing the result ("user exists", "user not found", or "error in the server").
+ */
 async function checkExists(name, password){
     try{
         const exists = await usersSchema.findOne({
@@ -34,14 +44,20 @@ async function checkExists(name, password){
     }
 }
 
-
+/**
+ * Checks if a user with the specified name (username or email) and password exists in the database,
+ * and sends an appropriate response to the client.
+ * 
+ * @param {Object} req - The request object from the client, containing the user's input data.
+ * @param {Object} res - The response object used to send a response back to the client.
+ * @returns {Promise<void>} - A promise that resolves when the operation is complete.
+ */
 const isExists = async (req, res) => {
     //getting data from the request's body
-    ////const { name, password } = req.body;
-    ////console.log(name + " " + password);
+    const { name, password } = req.body;
 
     // checking if the user exists in the DB  
-    //name used for userName or mail
+    //name used for userName/mail
     await checkExists(name, password).then(result => {
         console.log(result);
 
@@ -61,6 +77,20 @@ const createUser = async(req, res) => {
         console.log(password);
         console.log(mail);
         res.status(409).json({'message' : `you forgot something`});
+        return;
+    }
+
+    //check if a userName or mail is all ready taken
+    //to do- in the mail, need to do a regx for only hte start of the mail and not the @
+    const taken = await usersSchema.findOne({
+        $or: [
+            {userName: userName},
+            {mail: mail}
+        ]
+    }).exec();
+
+    if(taken){
+        res.status(409).json({'message' : `you piss of shit, you can not take a different user details`});
         return;
     }
 
