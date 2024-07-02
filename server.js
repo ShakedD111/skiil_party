@@ -7,7 +7,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const dbConnection = require('./config/mongoConnection');
 
-
 //db connection
 dbConnection.connectDB();
 
@@ -38,7 +37,7 @@ app.use('/api/users', require('./routers/api/usersAPI'));
 ////app.use('/', express.static(path.join(__dirname, 'public')));
 
 
-//errors hendler
+//errors handler
 app.get('*', (req,res) => {
     res.status(404);
     

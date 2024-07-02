@@ -1,5 +1,6 @@
 //const express = require('express');
 const usersSchema = require('../schemas/usersSchemaModels');
+const roles = require('../roles');
 
 /**
  * Checks if a user with the specified name (username or email) and password exists in the database.
@@ -80,8 +81,9 @@ const createUser = async(req, res) => {
         return;
     }
 
-    //check if a userName or mail is all ready taken
-    //to do- in the mail, need to do a regx for only hte start of the mail and not the @
+    //need to do - check valid data
+
+    //check if a userName or mail is already taken
     const taken = await usersSchema.findOne({
         $or: [
             {userName: userName},
@@ -94,10 +96,15 @@ const createUser = async(req, res) => {
         return;
     }
 
+    console.log(roles.basic);
+
+    // creating a schema with the new user details and adding him to the DB
+    // In the creating of a new user, the connections, tournaments and paries should be empty
     const newUser = new usersSchema({
         userName: userName,
         password: password,
         mail: mail,
+        role: roles.basic,
         connections: {},
         tournaments: [],
         parties: []
@@ -105,12 +112,119 @@ const createUser = async(req, res) => {
     
     await newUser.save()
     .then(savedUser  => {
-        res.status(201).json(savedUser);
+        res.status(201).json("saved successfully");
     })
     .catch(error => {
         console.error('Error saving user:', error);
         res.status(500).json({ 'message': 'Error saving user' });
     });
+}
+
+
+const updateUser = async(req, res) => {
+    const {oldUserName, newUser} = req.body;
+
+    if (!oldUserName || !newUser || typeof newUser !== 'object') {
+        return res.status(400).json({ message: 'Invalid input' });
+    }
+
+    //check if user exists
+    //check if the user is already taken
+    const isExists = await usersSchema.findOne({userName: oldUserName}).exec();
+
+    if(!isExists){
+        res.status(409).json({'message' : `the user does not exists...`});
+        return;
+    }
+
+    //check if the user is already taken
+    const taken = await usersSchema.findOne({
+        $and: [
+            {userName: { $ne: oldUserName }}  ,
+            {$or: [
+                {userName: newUser.userName},
+                {mail: newUser.mail}
+            ]}
+        ]
+    }).exec();
+
+    if(taken){
+        res.status(409).json({'message' : `you piss of shit, you can not take a different user details`});
+        return;
+    }
+    
+
+    // need to check if the user can update the oldUser details 
+    //need to check by the user that requested
+    const activeUserName = "rmbo1";
+    const activeUser = await usersSchema.findOne({userName: activeUserName});
+    const updatedUser = await usersSchema.findOne({userName: oldUserName});
+
+    console.log(activeUser.role);
+    console.log(updatedUser.role);
+
+    switch(activeUser.role){
+        case roles.admin:
+            if(activeUser !== oldUserName && updatedUser.role === roles.admin){
+                return res.status(400).json({ message: 'you can not do this!!' });
+            }
+            break;
+        case roles.basic:
+            if(activeUser !== oldUserName){
+                return res.status(400).json({ message: 'you can not do this!!' });
+            }
+            break;
+        default:
+            console.log("in in!!");
+            return res.status(400).json({ message: 'you can not do this!!' });
+    }
+
+    
+
+    /*
+    // checking if the users already exists 
+    const usersFound = await usersSchema.find({
+        $or: [
+            { userName: { $in: [oldUser.userName, newUser.userName] }},
+            { mail: { $in: [oldUser.mail, newUser.mail] }}
+            // { userName: { $in: req.body.userName }},
+            // { password: { $in: req.body.password }},
+            // { mail: { $in: req.body.mail }}
+        ]
+    });
+
+    const oldUserExists = usersFound.some(user => ( user.userName === oldUser.userName && user.password === oldUser.password));
+    const newUserExists = usersFound.some(user => (user.userName === newUser.userName || user.mail === newUser.mail));
+
+    if( !oldUserExists ){
+        return res.status(404).json({ message: 'current user does not exists' });
+    } else if( newUserExists ){
+        return res.status(404).json({ message: 'new user already exists' });
+    }
+    */
+
+    //reformating new new data 
+    // updateData = {"updates": {
+    //     "userName": newUser.userName,
+    //     "mail": newUser.mail,
+    //     "password": newUser.password
+    // }};
+
+    const updateAct = await usersSchema.updateOne(
+        {userName: oldUserName},
+        {$set: newUser},
+        {new: true, runValidators: true}
+    ).then(updatedUser  => {
+        res.status(201).json(updatedUser);
+    })
+    .catch(error => {
+        console.error('Error saving user:', error);
+        res.status(500).json({ 'message': 'Error saving user' });
+    });
+    
+    //.exec();
+
+
 }
 
 
@@ -145,4 +259,4 @@ const userCheck = async (req, res) => {
     res.status(200).json({"fine" : "cool"});
 };
 
-module.exports = {isExists, userInfo, createUser};
+module.exports = {isExists, userInfo, createUser, updateUser};

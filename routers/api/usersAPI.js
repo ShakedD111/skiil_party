@@ -21,7 +21,7 @@ router.route('/isExists')
 
 router.route('/userModify')
         .post(usersHandler.createUser)// add a new user
-        .put() // Update an existing user
+        .put(usersHandler.updateUser) // Update an existing user
         .delete(); // Delete an existing user
 
         //in update:::::
