@@ -1,12 +1,13 @@
-const mongoose = require('mongoose');
+//const mongoose = require('mongoose');
 const uri = "mongodb+srv://shakeddror28:kOigZwWlJQdvCkC5@cluster0.avuahfk.mongodb.net/AppDB?retryWrites=true&w=majority&appName=Cluster0";
 
-async function connectDB() {
+async function connectDB(mongoose) {
   try {
     await mongoose.connect(uri);
     
   } catch(error) {
-    console.error(error);
+    console.error('Error connecting to the database', error);
+    throw error;
   }
 }
 
