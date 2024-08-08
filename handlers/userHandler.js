@@ -1,5 +1,7 @@
 //const express = require('express');
-const usersSchema = require('../schemas/usersSchemaModels');
+//const usersSchema = require('../schemas/usersSchemaModels');
+const {UsersSchemaModel, ConnectionsSchemaModel} = require('../schemas/abstarctSchemaModelManager');
+const usersSchema = UsersSchemaModel.getModel();
 const roles = require('../roles');
 
 /**

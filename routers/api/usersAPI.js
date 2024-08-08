@@ -17,7 +17,7 @@ router = express.Router();
 */
 
 router.route('/isExists')
-        .post(usersHandler.isExists);//ned to add an amount of objects that can be retunred 
+        .post(usersHandler.isExists);//ned to add an amount of objects that can be returned 
 
 router.route('/userModify')
         .post(usersHandler.createUser)// add a new user

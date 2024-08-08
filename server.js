@@ -9,9 +9,9 @@ const dbConnection = require('./config/mongoConnection');
 
 class Server{
 
-    app
+    _app
     constructor() {
-        this.app = express();
+        this._app = express();
         
         //connect to the db
         /*try {
@@ -24,10 +24,10 @@ class Server{
 
     middlewares(){
         // Parse JSON bodies
-        this.app.use(bodyParser.json());
+        this._app.use(bodyParser.json());
 
         //log handler
-        this.app.use('/*', (req, res, next) => {
+        this._app.use('/*', (req, res, next) => {
             //logHandler(`${req.method}\t${req.path}\t${JSON.stringify(req.body)}`);
             next();
         });
@@ -38,7 +38,7 @@ class Server{
         ////app.use('/', express.static(path.join(__dirname, 'public')));
         //routes for the API's
         
-        this.app.use('/api/users', require('./routers/api/usersAPI'));
+        this._app.use('/api/users', require('./routers/api/usersAPI'));
         ////app.use('/api/tournaments', require('./routers/api/tournamentsAPI'));
         ////app.use('/api/parties', require('./routers/api/partiesAPI'));
         
@@ -48,7 +48,7 @@ class Server{
 
     errorHandler(){
         //errors handler
-        this.app.get('*', (req,res) => {
+        this._app.get('*', (req,res) => {
             res.status(404);
         
             if (req.accepts('html'))
@@ -74,7 +74,7 @@ class Server{
                 this.routes()
                 this.errorHandler()
 
-                this.app.listen(3000, () => {
+                this._app.listen(3000, () => {
                   console.log('Server is running on port 3000');
                 });
               })
