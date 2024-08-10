@@ -5,6 +5,8 @@ const usersHandler = require('../../handlers/userHandler');
 
 router = express.Router();
 
+/////router.use('/connection', require('./routers/connectionAPI'));
+
 /*need list:
         1.register
         2.delete
@@ -15,9 +17,11 @@ router = express.Router();
                 4.3.user connections
         5.is exist
 */
+router.route('/:userName')
+        .get(usersHandler.userInfo);
 
 router.route('/isExists')
-        .post(usersHandler.isExists);//ned to add an amount of objects that can be returned 
+        .post(usersHandler.isExists);//need to add an amount of objects that can be returned 
 
 router.route('/userModify')
         .post(usersHandler.createUser)// add a new user
@@ -34,8 +38,8 @@ router.route('/userModify')
     //check valid parties
 
 
-router.route('/userBasicInfo')
-        .get(usersHandler.userInfo);
+/*router.route('/userBasicInfo')
+        .get(usersHandler.userInfo);*/
 
 
 module.exports = router;

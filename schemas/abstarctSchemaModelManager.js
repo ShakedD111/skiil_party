@@ -21,6 +21,7 @@ class SchemaModelManager {
 
 
 class ConnectionsSchemaModel extends SchemaModelManager {
+    static _connectionsList = ["discord", "youtube", "epic games"]; 
     constructor() {
         super();
     }

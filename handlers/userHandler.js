@@ -2,6 +2,7 @@
 //const usersSchema = require('../schemas/usersSchemaModels');
 const {UsersSchemaModel, ConnectionsSchemaModel} = require('../schemas/abstarctSchemaModelManager');
 const usersSchema = UsersSchemaModel.getModel();
+const connectionModel = ConnectionsSchemaModel.getModel();
 const roles = require('../roles');
 
 /**
@@ -102,12 +103,22 @@ const createUser = async(req, res) => {
 
     // creating a schema with the new user details and adding him to the DB
     // In the creating of a new user, the connections, tournaments and paries should be empty
+    //create the connection map:
+    
+
+    const connectionsMap = new Map();
+
+    ConnectionsSchemaModel._connectionsList.forEach((value, index, array) => {
+        connectionsMap.set(value, null);
+    });
+
+
     const newUser = new usersSchema({
         userName: userName,
         password: password,
         mail: mail,
         role: roles.basic,
-        connections: {},
+        connections: connectionsMap,
         tournaments: [],
         parties: []
     });
@@ -151,7 +162,7 @@ const updateUser = async(req, res) => {
     }).exec();
 
     if(taken){
-        res.status(409).json({'message' : `you piss of shit, you can not take a different user details`});
+        res.status(409).json({'message' : `you can not take a different user details`});
         return;
     }
     
@@ -177,40 +188,8 @@ const updateUser = async(req, res) => {
             }
             break;
         default:
-            console.log("in in!!");
-            return res.status(400).json({ message: 'you can not do this!!' });
+            return res.status(400).json({ message: 'what is that role???? R u an hacker?' });
     }
-
-    
-
-    /*
-    // checking if the users already exists 
-    const usersFound = await usersSchema.find({
-        $or: [
-            { userName: { $in: [oldUser.userName, newUser.userName] }},
-            { mail: { $in: [oldUser.mail, newUser.mail] }}
-            // { userName: { $in: req.body.userName }},
-            // { password: { $in: req.body.password }},
-            // { mail: { $in: req.body.mail }}
-        ]
-    });
-
-    const oldUserExists = usersFound.some(user => ( user.userName === oldUser.userName && user.password === oldUser.password));
-    const newUserExists = usersFound.some(user => (user.userName === newUser.userName || user.mail === newUser.mail));
-
-    if( !oldUserExists ){
-        return res.status(404).json({ message: 'current user does not exists' });
-    } else if( newUserExists ){
-        return res.status(404).json({ message: 'new user already exists' });
-    }
-    */
-
-    //reformating new new data 
-    // updateData = {"updates": {
-    //     "userName": newUser.userName,
-    //     "mail": newUser.mail,
-    //     "password": newUser.password
-    // }};
 
     const updateAct = await usersSchema.updateOne(
         {userName: oldUserName},
@@ -223,14 +202,46 @@ const updateUser = async(req, res) => {
         console.error('Error saving user:', error);
         res.status(500).json({ 'message': 'Error saving user' });
     });
-    
-    //.exec();
-
-
 }
 
 
 const userInfo = async (req, res) => {
+
+    //**to do**
+    //check if can access user info using token
+    console.log(req.params.userName);
+    const user = await UsersSchemaModel.getModel().aggregate([
+        { $match: { userName: req.params.userName } },
+        { $project: {
+            userName: 1,
+            mail: 1,
+            role: 1,
+            tournaments: 1,
+            parties: 1,
+            connections: {
+                $map: {
+                    input: { $objectToArray: "$connections" },
+                    as: "conn",
+                    in: {
+                        k: "$$conn.k",
+                        v: {
+                            appUserName: "$$conn.v.appUserName"
+                            // Exclude `appPassword`
+                        }
+                    }
+                }
+            }
+        }}
+    ]);
+
+    if (!user || user.length === 0) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json(user[0]); 
+
+
+
     /*console.log(req.body);
     const name = req.query.name;
     const password = req.query.password;
@@ -252,8 +263,8 @@ const userInfo = async (req, res) => {
     }
     else{
         res.status(404).json({'message' : `&{userName} does not exist`});
-    }*/
-    res.status(200).json({"fine" : "cool"});
+    }
+    res.status(200).json({"fine" : "cool"});*/
 };
 
 
