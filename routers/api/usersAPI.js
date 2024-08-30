@@ -20,13 +20,13 @@ router = express.Router();
 router.route('/:userName')
         .get(usersHandler.userInfo);
 
-router.route('/isExists')
-        .post(usersHandler.isExists);//need to add an amount of objects that can be returned 
+router.route('/userLogin')
+        .post(usersHandler.userLogin);//need to add an amount of objects that can be returned 
 
 router.route('/userModify')
         .post(usersHandler.createUser)// add a new user
         .put(usersHandler.updateUser) // Update an existing user
-        .delete(); // Delete an existing user
+        .delete(usersHandler.deleteUser); // Delete an existing user
 
         //in update:::::
  //check valid connections

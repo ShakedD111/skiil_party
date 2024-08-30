@@ -56,7 +56,7 @@ async function checkExists(name, password){
  * @param {Object} res - The response object used to send a response back to the client.
  * @returns {Promise<void>} - A promise that resolves when the operation is complete.
  */
-const isExists = async (req, res) => {
+const userLogin = async (req, res) => {
     //getting data from the request's body
     const { name, password } = req.body;
 
@@ -64,6 +64,11 @@ const isExists = async (req, res) => {
     //name used for userName/mail
     await checkExists(name, password).then(result => {
         console.log(result);
+
+        if(result.status === 200) {
+            //can login
+            //need to create a token for the user
+        }
 
         res.status(result.status).json({"msg": result.msg});
     });
@@ -95,14 +100,14 @@ const createUser = async(req, res) => {
     }).exec();
 
     if(taken){
-        res.status(409).json({'message' : `you piss of shit, you can not take a different user details`});
+        res.status(409).json({'message' : `you can not take a different user details`});
         return;
     }
 
     console.log(roles.basic);
 
     // creating a schema with the new user details and adding him to the DB
-    // In the creating of a new user, the connections, tournaments and paries should be empty
+    // In the creating of a new user, the connections, tournaments and parties should be empty
     //create the connection map:
     
 
@@ -205,17 +210,42 @@ const updateUser = async(req, res) => {
 }
 
 
+const deleteUser = async(req, res) => {
+    const userName = req.body;
+
+    // check if the user deleting is admin or is the same user
+
+
+    try{
+        const action = await usersSchema.deleteOne({"userName": userName});
+        if(action > 0) {
+            req.status(200).json({'message': 'user was deleted'});
+        } else{
+            req.status(404).json({'message': 'user was not found'});
+        }
+    } catch (error){
+        console.log(error);
+        req.status(500).json({'error': 'error in deleting the user'})
+    }
+    
+    
+    
+
+
+
+}
+
 const userInfo = async (req, res) => {
 
     //**to do**
     //check if can access user info using token
     console.log(req.params.userName);
+
     const user = await UsersSchemaModel.getModel().aggregate([
         { $match: { userName: req.params.userName } },
         { $project: {
             userName: 1,
             mail: 1,
-            role: 1,
             tournaments: 1,
             parties: 1,
             connections: {
@@ -239,32 +269,6 @@ const userInfo = async (req, res) => {
     }
 
     res.status(200).json(user[0]); 
-
-
-
-    /*console.log(req.body);
-    const name = req.query.name;
-    const password = req.query.password;
-    
-    const exists = await usersModel.findOne({
-        $and: [
-            {$or: [
-                    {userName: name},
-                    {mail: name}
-                ]} ,
-            {password: password}
-            ]
-        }).exec();
-
-
-    if(exists){
-        // what t odd??????
-        res.status(200).json({id: exists._id});
-    }
-    else{
-        res.status(404).json({'message' : `&{userName} does not exist`});
-    }
-    res.status(200).json({"fine" : "cool"});*/
 };
 
 
@@ -272,4 +276,4 @@ const userCheck = async (req, res) => {
     res.status(200).json({"fine" : "cool"});
 };
 
-module.exports = {isExists, userInfo, createUser, updateUser};
+module.exports = {userLogin, userInfo, createUser, updateUser, deleteUser};
