@@ -23,10 +23,10 @@ router.route('/:userName')
 //router.route('/userLogin')
         //.post(usersHandler.getEntity());//need to add an amount of objects that can be returned 
 
-//router.route('/manage')
-        //.post(usersHandler.createUser)// add a new user
-        //.put(usersHandler.updateUser) // Update an existing user
-        //.delete(usersHandler.deleteUser); // Delete an existing user
+router.route('/manage')
+        .post(usersHandler.createEntity)// add a new user
+        .put(usersHandler.updateEntity) // Update an existing user
+        .delete(usersHandler.deleteEntity); // Delete an existing user
 
         //in update:::::
  //check valid connections
