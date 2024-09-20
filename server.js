@@ -39,6 +39,7 @@ class Server{
         //routes for the API's
         
         this._app.use('/api/users', require('./routers/api/usersAPI'));
+        //this._app.use('/api/parties', require('./routers/api/partiesAPI'));
         ////app.use('/api/tournaments', require('./routers/api/tournamentsAPI'));
         ////app.use('/api/parties', require('./routers/api/partiesAPI'));
         

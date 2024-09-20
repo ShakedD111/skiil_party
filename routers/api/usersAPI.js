@@ -18,15 +18,15 @@ router = express.Router();
         5.is exist
 */
 router.route('/:userName')
-        .get(usersHandler.userInfo);
+        .get(usersHandler.getEntity);
 
-router.route('/userLogin')
-        .post(usersHandler.userLogin);//need to add an amount of objects that can be returned 
+//router.route('/userLogin')
+        //.post(usersHandler.getEntity());//need to add an amount of objects that can be returned 
 
-router.route('/userModify')
-        .post(usersHandler.createUser)// add a new user
-        .put(usersHandler.updateUser) // Update an existing user
-        .delete(usersHandler.deleteUser); // Delete an existing user
+//router.route('/manage')
+        //.post(usersHandler.createUser)// add a new user
+        //.put(usersHandler.updateUser) // Update an existing user
+        //.delete(usersHandler.deleteUser); // Delete an existing user
 
         //in update:::::
  //check valid connections
