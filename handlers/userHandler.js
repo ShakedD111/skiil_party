@@ -132,8 +132,83 @@ class UserHandler extends HandlerManager {
 
     static async updateEntity(req, res) {
         try {
+            const {oldUserName, updateData} = req.body;
+
+            console.log(oldUserName);
+            console.log(updateData);
+
+            if (!oldUserName || !updateData || typeof updateData !== 'object') {
+                return res.status(400).json({ message: 'Invalid input' });
+            }
+
+            
+
+            const activeUserName = "rmbo1";
+            const activeUser = await usersSchema.findOne({userName: activeUserName});
+            const oldUser = await usersSchema.findOne({userName: oldUserName});
+
+            //check if user exists
+            if(!oldUser){
+                res.status(409).json({'message' : `the user does not exists`});
+                return;
+            }
+
+            //adding conditions to check if data already in use
+            const conditions = [];
+            if(updateData.userName) {
+                conditions.push({userName: updateData.userName});
+            } 
+            if(updateData.mail) {
+                conditions.push({mail: updateData.mail});
+            }
+
+            for( var i = 0; i < conditions.length; i++) { console.log(conditions[i])};
+            console.log(conditions.length);
+            
+            //check if new userName
+            var taken;
+            if(conditions.length > 0) {
+                taken = await usersSchema.findOne({
+                    $or: conditions
+                }).exec();
+            }
+
+            if(taken){
+                res.status(409).json({'message' : `you can not take a different user details`});
+                return;
+            }
+
+            // need to check if the user can update the oldUser details 
+            //need to check by the user that requested
+            switch(activeUser.role){
+                case roles.admin:
+                    if(activeUserName !== oldUserName && oldUser.role === roles.admin){
+                        return res.status(400).json({ message: 'you can not do this!!' });
+                    }
+                    break;
+                case roles.basic:
+                    if(activeUserName !== oldUserName){
+                        return res.status(400).json({ message: 'you can not do this!!' });
+                    }
+                    break;
+                default:
+                    return res.status(400).json({ message: 'what is that role???? R u a hacker?' });
+            }
+
+            const updateAct = await usersSchema.updateOne(
+                {userName: oldUserName},
+                {$set: updateData},
+                {new: true, runValidators: true}
+            ).then(updatedUser  => {
+                res.status(201).json(updatedUser);
+            })
+            .catch(error => {
+                console.error('Error saving user:', error);
+                res.status(500).json({ 'message': 'Error saving user' });
+            });
             
         } catch (error) {
+            console.log(error);
             res.status(500).json({message : 'Internal server error'});
 
         }
