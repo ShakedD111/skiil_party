@@ -9,6 +9,8 @@ class UsersSchemaModel extends SchemaModelManager {
 
     static getSchema(){
         if(!this._schema){
+            
+
             this._schema = new mongoose.Schema({
                 userName: { 
                     type: String,
@@ -36,11 +38,19 @@ class UsersSchemaModel extends SchemaModelManager {
                     type: [String],
                     default: []
                 },
+                crowns: {
+                    type: Number,
+                    default: 0
+                },
                 parties: {
-                    type: [String],
-                    default: []
+                    type: Map,
+                    of: new mongoose.Schema({
+                        role: { type: String, required: true },  // User's role in the party
+                        joinDate: {type: Date, default: Date.now},  // User's join date 
+                        score: {type: Number, required: true}    // User's score in the party, 
+                        }),
+                    default: {}
                 }
-                
             });
         }
         return this._schema;

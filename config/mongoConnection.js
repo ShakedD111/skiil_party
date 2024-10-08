@@ -20,4 +20,24 @@ const checkConnection = (app) => {
   })
 };
 
-module.exports = {connectDB, checkConnection};
+async function aggregateHandler(model, pipeline, options = {}) {
+  try{
+    let aggregate = model.aggregate(pipeline);
+  } catch ( error ) {
+    throw {aggregateError: error};
+  }
+
+  Object.entries(options).forEach(([key, value]) => {
+    if(typeof options[key] === 'function') {
+      aggregate = aggregate[key](value);
+    }
+  });
+
+  try {
+    return await aggregate.exec();
+  } catch (error) {
+    throw {executionError: error};
+  }
+}
+
+module.exports = {connectDB, checkConnection, aggregateHandler};

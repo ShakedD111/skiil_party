@@ -1,9 +1,19 @@
 const express = require('express');
-const usersHandler = require('../../handlers/userHandler');
+const PartiesHandler = require('../../handlers/partiesHandler');
 
 
 router = express.Router();
 
+
+
+router.route('/:party')
+        .get(PartiesHandler.getEntity);
+
+
+router.route('/manage')
+        .post(PartiesHandler.createEntity)// add a new party
+        .put(PartiesHandler.updateEntity) // Update an existing party
+        .delete(PartiesHandler.deleteEntity); // Delete an existing party
 /*router.route('/:party')
     .get(usersHandler.userInfo);
 

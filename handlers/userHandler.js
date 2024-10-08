@@ -2,8 +2,6 @@ const UsersSchemaModel = require('../schemas/usersSchemaModels');
 const usersSchema = UsersSchemaModel.getModel();
 const ConnectionsSchemaModel = require('../schemas/ConnectionsSchemaModel');
 HandlerManager = require('./handlerManager');
-
-
 //////const connectionModel = ConnectionsSchemaModel.getModel();
 const roles = require('../roles');
 
@@ -18,13 +16,14 @@ class UserHandler extends HandlerManager {
             //check if can access user info using token
             console.log(req.params.userName);
 
-            const user = await UsersSchemaModel.getModel().aggregate([
+            const user = await usersSchema.aggregate([
                 { $match: { userName: req.params.userName } },
                 { $project: {
                     userName: 1,
                     mail: 1,
                     tournaments: 1,
                     parties: 1,
+                    crowns: 1,
                     connections: {
                         $map: {
                             input: { $objectToArray: "$connections" },
@@ -51,15 +50,21 @@ class UserHandler extends HandlerManager {
         }
     }
 
+    static async getEntities(req, res, numOfEntities = 0){
+        try {
+            
+        } catch(error) {
+            req.status(500).json({massage: "Internal Server Error"});
+        }
+    }
+
     static async createEntity(req, res) {
         try {
-            const {userName, password, mail} = req.body;
+            //{userName, password, mail}
+            const entityData  = req.body;
 
             // Check if all required fields are provided
-            if(!userName || !password || !mail) {
-                console.log(userName);
-                console.log(password);
-                console.log(mail);
+            if(!entityData.userName || !entityData.password || !entityData.mail) {
                 res.status(409).json({'message' : `you forgot something`});
                 return;
             }
@@ -69,10 +74,10 @@ class UserHandler extends HandlerManager {
             //check if a userName or mail is already taken
             const taken = await usersSchema.findOne({
                 $or: [
-                    {userName: userName},
-                    {mail: mail}
+                    {userName: entityData.userName},
+                    {mail: entityData.mail}
                 ]
-            }).exec();
+            });
 
             if(taken){
                 res.status(409).json({'message' : `you can not take a different user details`});
@@ -90,25 +95,25 @@ class UserHandler extends HandlerManager {
                 connectionsMap.set(value, null);
             });
 
-
             const newUser = new usersSchema({
-                userName: userName,
-                password: password,
-                mail: mail,
+                userName: entityData.userName,
+                password: entityData.password,
+                mail: entityData.mail,
                 role: roles.basic,
                 connections: connectionsMap,
                 tournaments: [],
-                parties: []
+                parties: [],
+                crowns: 0
             });
             
-            await newUser.save()
-            .then(savedUser  => {
+            try {
+                await newUser.save();
                 res.status(201).json("saved successfully");
-            })
-            .catch(error => {
+            } catch(error) {
                 console.error('Error saving user:', error);
                 res.status(500).json({ 'message': 'Error saving user' });
-            });
+            }
+
         } catch (error) {
             res.status(500).json({message : 'Internal server error'});
         }
@@ -134,9 +139,6 @@ class UserHandler extends HandlerManager {
         try {
             const {oldUserName, updateData} = req.body;
 
-            console.log(oldUserName);
-            console.log(updateData);
-
             if (!oldUserName || !updateData || typeof updateData !== 'object') {
                 return res.status(400).json({ message: 'Invalid input' });
             }
@@ -161,9 +163,6 @@ class UserHandler extends HandlerManager {
             if(updateData.mail) {
                 conditions.push({mail: updateData.mail});
             }
-
-            for( var i = 0; i < conditions.length; i++) { console.log(conditions[i])};
-            console.log(conditions.length);
             
             //check if new userName
             var taken;
@@ -180,7 +179,7 @@ class UserHandler extends HandlerManager {
 
             // need to check if the user can update the oldUser details 
             //need to check by the user that requested
-            switch(activeUser.role){
+            switch(activeUser.role) {
                 case roles.admin:
                     if(activeUserName !== oldUserName && oldUser.role === roles.admin){
                         return res.status(400).json({ message: 'you can not do this!!' });
@@ -195,11 +194,12 @@ class UserHandler extends HandlerManager {
                     return res.status(400).json({ message: 'what is that role???? R u a hacker?' });
             }
 
+            //need to check if the updateData is valid and if the old data can be changed, for now only check if the userName/mail already taken
             const updateAct = await usersSchema.updateOne(
                 {userName: oldUserName},
                 {$set: updateData},
                 {new: true, runValidators: true}
-            ).then(updatedUser  => {
+            ).then(updatedUser => {
                 res.status(201).json(updatedUser);
             })
             .catch(error => {
@@ -211,6 +211,30 @@ class UserHandler extends HandlerManager {
             console.log(error);
             res.status(500).json({message : 'Internal server error'});
 
+        }
+    }
+
+    static async logIn(req, res) {
+        try {
+            const {name, password} = req.body;
+            const exists = await usersSchema.findOne({
+                $and: [
+                    {password: password},
+                    {$or: [
+                        {userName: name},
+                        {mail: name}
+                        ]
+                    }
+                ]
+            }).exec();
+
+            if (exists) {
+                res.status(200).json({message: "can login"});
+            } else {
+                res.status(404).json({message: "user does not exists"});
+            }
+        } catch(error) {
+            res.status(500).json({message : 'Internal server error'});
         }
     }
 }

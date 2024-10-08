@@ -6,19 +6,23 @@ class HandlerManager {
         }
     }
 
-    static getEntity(entityKey) {
+    static getEntity(req, res) {
         throw new Error("Method 'getEntity()' must be implemented.");
     }
 
-    static createEntity(entityData) {
+    static async getEntities(req, res, numOfEntities = 0){
+        throw new Error("Method 'getEntities()' must be implemented.");
+    }
+
+    static createEntity(req, res) {
         throw new Error("Method 'createEntity()' must be implemented.");
     }
 
-    static deleteEntity(entityKey) {
+    static deleteEntity(req, res) {
         throw new Error("Method 'deleteEntity()' must be implemented.");
     }
 
-    static updateEntity(entityKey, entityData) {
+    static updateEntity(req, res) {
         throw new Error("Method 'updateEntity()' must be implemented.");
     }
 }

@@ -20,8 +20,8 @@ router = express.Router();
 router.route('/:userName')
         .get(usersHandler.getEntity);
 
-//router.route('/userLogin')
-        //.post(usersHandler.getEntity());//need to add an amount of objects that can be returned 
+router.route('/userLogin')
+        .post(usersHandler.logIn);//need to add an amount of objects that can be returned 
 
 router.route('/manage')
         .post(usersHandler.createEntity)// add a new user
