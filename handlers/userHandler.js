@@ -3,6 +3,7 @@ const usersSchema = UsersSchemaModel.getModel();
 const ConnectionsSchemaModel = require('../schemas/ConnectionsSchemaModel');
 const dbHandler = require('../config/userDbHandler');
 HandlerManager = require('./handlerManager');
+const mongoConnection = require('../config/mongoConnection');
 //////const connectionModel = ConnectionsSchemaModel.getModel();
 const roles = require('../roles');
 
@@ -162,16 +163,8 @@ class UserHandler extends HandlerManager {
             if(updateData.mail) {
                 conditions.push({mail: updateData.mail});
             }
-            
-            //check if new userName
-            var taken;
-            if(conditions.length > 0) {
-                taken = await usersSchema.findOne({
-                    $or: conditions
-                }).exec();
-            }
 
-            if(taken){
+            if(isFieldsTaken(usersSchema, {userName: updateData.userName, mail: updateData.mail}).length){
                 res.status(409).json({'message' : `you can not take a different user details`});
                 return;
             }
@@ -216,7 +209,21 @@ class UserHandler extends HandlerManager {
     static async logIn(req, res) {
         try {
             const {name, password} = req.body;
-            const exists = await usersSchema.findOne({
+            const exists = await mongoConnection.aggregateHandler(usersSchema, [
+                {
+                    $match: {
+                        $and: [
+                            {password: password},
+                            {$or: [
+                                {userName: name},
+                                {mail: name}
+                                ]
+                            }
+                        ]
+                    }
+                }
+            ]);
+            /*const exists = await usersSchema.findOne({
                 $and: [
                     {password: password},
                     {$or: [
@@ -225,9 +232,11 @@ class UserHandler extends HandlerManager {
                         ]
                     }
                 ]
-            }).exec();
+            }).exec();*/
 
-            if (exists) {
+
+            console.log(exists.length);
+            if (exists.length) {
                 res.status(200).json({message: "can login"});
             } else {
                 res.status(404).json({message: "user does not exists"});

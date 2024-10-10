@@ -17,7 +17,7 @@ class PartiesHandler extends HandlerManager {
             const partyID = req.params.partyID;
 
             //gets the party data
-            const partyData = partiesSchema.findOne({_id: partyID}).exec();
+            const partyData = await partiesSchema.findOne({_id: partyID});
 
             if (!party){
                 req.status(401).json({massage: "party not found"});
