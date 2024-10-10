@@ -21,18 +21,20 @@ const checkConnection = (app) => {
 };
 
 async function aggregateHandler(model, pipeline, options = {}) {
+  let aggregate;
   try{
-    let aggregate = model.aggregate(pipeline);
+    aggregate = model.aggregate(pipeline);
   } catch ( error ) {
     throw {aggregateError: error};
   }
 
   Object.entries(options).forEach(([key, value]) => {
-    if(typeof options[key] === 'function') {
+    if(typeof aggregate[key] === 'function') {
       aggregate = aggregate[key](value);
     }
   });
 
+  
   try {
     return await aggregate.exec();
   } catch (error) {

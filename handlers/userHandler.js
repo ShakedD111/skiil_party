@@ -1,6 +1,7 @@
 const UsersSchemaModel = require('../schemas/usersSchemaModels');
 const usersSchema = UsersSchemaModel.getModel();
 const ConnectionsSchemaModel = require('../schemas/ConnectionsSchemaModel');
+const dbHandler = require('../config/userDbHandler');
 HandlerManager = require('./handlerManager');
 //////const connectionModel = ConnectionsSchemaModel.getModel();
 const roles = require('../roles');
@@ -72,14 +73,12 @@ class UserHandler extends HandlerManager {
             //need to do - check valid data
 
             //check if a userName or mail is already taken
-            const taken = await usersSchema.findOne({
-                $or: [
-                    {userName: entityData.userName},
-                    {mail: entityData.mail}
-                ]
+            const taken = await dbHandler.isFieldsTaken(usersSchema, {
+                userName: entityData.userName,
+                mail: entityData.mail
             });
 
-            if(taken){
+            if(taken.length){
                 res.status(409).json({'message' : `you can not take a different user details`});
                 return;
             }
