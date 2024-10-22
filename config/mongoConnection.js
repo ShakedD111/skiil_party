@@ -20,26 +20,26 @@ const checkConnection = (app) => {
   })
 };
 
-async function aggregateHandler(model, pipeline, options = {}) {
-  let aggregate;
+async function aggregateHandler(model, pipeline) {  
   try{
-    aggregate = model.aggregate(pipeline);
+    console.log(pipeline);
+    return await model.aggregate(pipeline);
   } catch ( error ) {
+    console.log("error in aggregateHandler");
     throw {aggregateError: error};
   }
-
-  Object.entries(options).forEach(([key, value]) => {
+  /*Object.entries(options).forEach(([key, value]) => {
     if(typeof aggregate[key] === 'function') {
       aggregate = aggregate[key](value);
     }
   });
-
   
   try {
     return await aggregate.exec();
   } catch (error) {
+    console.log("error in aggregateHandler");
     throw {executionError: error};
-  }
+  }*/
 }
 
 module.exports = {connectDB, checkConnection, aggregateHandler};

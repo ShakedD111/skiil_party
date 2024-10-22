@@ -20,6 +20,9 @@ router = express.Router();
 router.route('/:userName')
         .get(usersHandler.getEntity);
 
+router.route('/usersList')
+        .get(usersHandler.getEntities);
+        
 router.route('/userLogin')
         .post(usersHandler.logIn);//need to add an amount of objects that can be returned 
 

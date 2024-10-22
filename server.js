@@ -6,6 +6,7 @@ const path = require('path');
 const express = require('express');
 const mongoose = require('mongoose');
 const dbConnection = require('./config/mongoConnection');
+const HttpStatus = require('./enums/httpStatus');
 
 class Server{
 
@@ -50,16 +51,16 @@ class Server{
     errorHandler(){
         //errors handler
         this._app.get('*', (req,res) => {
-            res.status(404);
+            res.status(HttpStatus.NOT_FOUND);
         
             if (req.accepts('html'))
             {
                 //need to be sendFile
-                res.status(400).send('stupid html');//will need to send the error page (send file)
+                res.status(HttpStatus.NOT_FOUND).send('stupid html');//will need to send the error page (send file)
             } else if (req.accepts('json')) {
-                res.status(400).json({ 'error' : '404 - not found'});
+                res.status(HttpStatus.NOT_FOUND).json({ 'error' : '404 - not found'});
             } else {
-                res.status(400).send('stupid');
+                res.status(HttpStatus.NOT_FOUND).send('stupid');
             }
         }); 
     }

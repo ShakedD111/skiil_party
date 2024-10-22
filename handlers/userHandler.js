@@ -6,6 +6,7 @@ HandlerManager = require('./handlerManager');
 const mongoConnection = require('../config/mongoConnection');
 //////const connectionModel = ConnectionsSchemaModel.getModel();
 const roles = require('../roles');
+const HttpStatus = require('../enums/httpStatus');
 
 class UserHandler extends HandlerManager {
     constructor() {
@@ -13,51 +14,31 @@ class UserHandler extends HandlerManager {
     }
 
     static async getEntity(req, res) {
-        try {
-            //**to do**
-            //check if can access user info using token
-            console.log(req.params.userName);
-
-            const user = await usersSchema.aggregate([
-                { $match: { userName: req.params.userName } },
-                { $project: {
-                    userName: 1,
-                    mail: 1,
-                    tournaments: 1,
-                    parties: 1,
-                    crowns: 1,
-                    connections: {
-                        $map: {
-                            input: { $objectToArray: "$connections" },
-                            as: "conn",
-                            in: {
-                                k: "$$conn.k",
-                                v: {
-                                    appUserName: "$$conn.v.appUserName"
-                                    // Exclude `appPassword`
-                                }
-                            }
-                        }
-                    }
-                }}
-            ]);
-        
-            if (!user || user.length === 0) {
-                return res.status(404).json({ message: 'User not found' });
-            }
-        
-            res.status(200).json(user[0]); 
-        } catch (error) {
-             res.status(500).json({message : 'Internal server error'});
-        }
+        await UserHandler.getEntitiesListByRang(res, {userName: req.params.userName}, 1);
     }
 
-    static async getEntities(req, res, numOfEntities = 0){
+    static async getEntities(req, res){
+        //to do: check valid info
+        await UserHandler.getEntitiesListByRang(res, req.body, parseInt(req.query.limit));
+    }
+
+    static async getEntitiesListByRang(res, data = {}, limit = 0) {
+        let aggregate;
+
         try {
-            
-        } catch(error) {
-            req.status(500).json({massage: "Internal Server Error"});
+            console.log(data);
+            aggregate = await dbHandler.getEntityList(usersSchema, data, limit);
+        } catch (error) {
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({message : 'Internal server error'});
         }
+    
+        if (!aggregate || aggregate.length === 0) {
+            return res.status(HttpStatus.NOT_FOUND).json({ message: "could not find users" });
+        }
+
+        //numOfEntities = (numOfEntities === 0 ? usersSchema.length : numOfEntities);
+        console.log(aggregate.length);
+        res.status(HttpStatus.OK).json(aggregate);
     }
 
     static async createEntity(req, res) {
@@ -67,7 +48,7 @@ class UserHandler extends HandlerManager {
 
             // Check if all required fields are provided
             if(!entityData.userName || !entityData.password || !entityData.mail) {
-                res.status(409).json({'message' : `you forgot something`});
+                res.status(HttpStatus.BAD_REQUEST).json({'message' : `you forgot something`});
                 return;
             }
 
@@ -80,7 +61,7 @@ class UserHandler extends HandlerManager {
             });
 
             if(taken.length){
-                res.status(409).json({'message' : `you can not take a different user details`});
+                res.status(HttpStatus.CONFLICT).json({'message' : `you can not take a different user details`});
                 return;
             }
 
@@ -89,33 +70,12 @@ class UserHandler extends HandlerManager {
             //create the connection map:
             
 
-            const connectionsMap = new Map();
-
-            ConnectionsSchemaModel._connectionsList.forEach((value, index, array) => {
-                connectionsMap.set(value, null);
-            });
-
-            const newUser = new usersSchema({
-                userName: entityData.userName,
-                password: entityData.password,
-                mail: entityData.mail,
-                role: roles.basic,
-                connections: connectionsMap,
-                tournaments: [],
-                parties: [],
-                crowns: 0
-            });
+            const connectionsMap = UserHandler.createUserConnectionsMap(ConnectionsSchemaModel._connectionsList);
             
-            try {
-                await newUser.save();
-                res.status(201).json("saved successfully");
-            } catch(error) {
-                console.error('Error saving user:', error);
-                res.status(500).json({ 'message': 'Error saving user' });
-            }
+            UserHandler.createUserData(entityData, roles.basic, connectionsMap);
 
         } catch (error) {
-            res.status(500).json({message : 'Internal server error'});
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({message : 'Internal server error'});
         }
     }
 
@@ -124,13 +84,13 @@ class UserHandler extends HandlerManager {
             const {userName} = req.body;
             const action = await usersSchema.deleteOne({"userName": userName});
             if(action.deletedCount > 0) {
-                res.status(200).json({'message': 'user was deleted'});
+                res.status(HttpStatus.OK).json({'message': 'user was deleted'});
             } else{
-                res.status(404).json({'message': 'user was not found'});
+                res.status(HttpStatus.NOT_FOUND).json({'message': 'user was not found'});
             }
         } catch (error) {
             console.log(error);
-            res.status(500).json({message : 'Internal server error'});
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({message : 'Internal server error'});
 
         }
     }
@@ -140,10 +100,8 @@ class UserHandler extends HandlerManager {
             const {oldUserName, updateData} = req.body;
 
             if (!oldUserName || !updateData || typeof updateData !== 'object') {
-                return res.status(400).json({ message: 'Invalid input' });
+                return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Invalid input' });
             }
-
-            
 
             const activeUserName = "rmbo1";
             const activeUser = await usersSchema.findOne({userName: activeUserName});
@@ -151,7 +109,7 @@ class UserHandler extends HandlerManager {
 
             //check if user exists
             if(!oldUser){
-                res.status(409).json({'message' : `the user does not exists`});
+                res.status(HttpStatus.NOT_FOUND).json({'message' : `the user does not exists`});
                 return;
             }
 
@@ -165,7 +123,7 @@ class UserHandler extends HandlerManager {
             }
 
             if(isFieldsTaken(usersSchema, {userName: updateData.userName, mail: updateData.mail}).length){
-                res.status(409).json({'message' : `you can not take a different user details`});
+                res.status(HttpStatus.CONFLICT).json({'message' : `you can not take a different user details`});
                 return;
             }
 
@@ -174,16 +132,16 @@ class UserHandler extends HandlerManager {
             switch(activeUser.role) {
                 case roles.admin:
                     if(activeUserName !== oldUserName && oldUser.role === roles.admin){
-                        return res.status(400).json({ message: 'you can not do this!!' });
+                        return res.status(HttpStatus.BAD_REQUEST).json({ message: 'you can not do this!!' });
                     }
                     break;
                 case roles.basic:
                     if(activeUserName !== oldUserName){
-                        return res.status(400).json({ message: 'you can not do this!!' });
+                        return res.status(HttpStatus.BAD_REQUEST).json({ message: 'you can not do this!!' });
                     }
                     break;
                 default:
-                    return res.status(400).json({ message: 'what is that role???? R u a hacker?' });
+                    return res.status(HttpStatus.BAD_REQUEST).json({ message: 'what is that role???? R u a hacker?' });
             }
 
             //need to check if the updateData is valid and if the old data can be changed, for now only check if the userName/mail already taken
@@ -192,17 +150,16 @@ class UserHandler extends HandlerManager {
                 {$set: updateData},
                 {new: true, runValidators: true}
             ).then(updatedUser => {
-                res.status(201).json(updatedUser);
+                res.status(HttpStatus.CREATED).json(updatedUser);
             })
             .catch(error => {
                 console.error('Error saving user:', error);
-                res.status(500).json({ 'message': 'Error saving user' });
+                res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ 'message': 'Error saving user' });
             });
             
         } catch (error) {
             console.log(error);
-            res.status(500).json({message : 'Internal server error'});
-
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({message : 'Internal server error'});
         }
     }
 
@@ -237,12 +194,41 @@ class UserHandler extends HandlerManager {
 
             console.log(exists.length);
             if (exists.length) {
-                res.status(200).json({message: "can login"});
+                res.status(HttpStatus.OK).json({message: "can login"});
             } else {
-                res.status(404).json({message: "user does not exists"});
+                res.status(HttpStatus.NOT_FOUND).json({message: "user does not exists"});
             }
         } catch(error) {
-            res.status(500).json({message : 'Internal server error'});
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({message : 'Internal server error'});
+        }
+    }
+
+    static createUserConnectionsMap(set) {
+        const connections = new Map();
+
+        ConnectionsSchemaModel._connectionsList.forEach((value, index, array) => {
+            connections.set(value, null);
+        });
+
+        return Object.fromEntries(connections);
+    }
+
+    static async createUserData(entityBaseData, role = roles.basic, connections = {}, tournaments = {}, parties = {}, crowns = 0) {
+        const newUser = new usersSchema({
+            entityBaseData,
+            role: role,
+            connections: connections,
+            tournaments: tournaments,
+            parties: parties,
+            crowns: crowns
+        });
+        
+        try {
+            await newUser.save();
+            res.status(HttpStatus.CREATED).json("saved successfully");
+        } catch(error) {
+            console.error('Error saving user:', error);
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ 'message': 'Error saving user' });
         }
     }
 }

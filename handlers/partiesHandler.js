@@ -5,6 +5,7 @@ const ConnectionsSchemaModel = require('../schemas/ConnectionsSchemaModel');
 HandlerManager = require('./handlerManager');
 //////const connectionModel = ConnectionsSchemaModel.getModel();
 const roles = require('../roles');
+const httpStatus = require('../enums/httpStatus');
 ///const { default: mongoose } = require('mongoose');
 
 class PartiesHandler extends HandlerManager {
@@ -20,7 +21,7 @@ class PartiesHandler extends HandlerManager {
             const partyData = await partiesSchema.findOne({_id: partyID});
 
             if (!party){
-                req.status(401).json({massage: "party not found"});
+                req.status(httpStatus.NOT_FOUND).json({massage: "party not found"});
             }
 
             //gets the users and their party data
@@ -44,9 +45,9 @@ class PartiesHandler extends HandlerManager {
             dataMap.set('party', partyData);
             dataMap.set('users', usersData);
 
-            req.status(200).json(dataMap);
+            req.status(httpStatus.OK).json(dataMap);
             } catch(error) {
-            req.status(500).json({massage: "Internal Server Error"});
+            req.status(httpStatus.INTERNAL_SERVER_ERROR).json({massage: "Internal Server Error"});
         }
     }
 
@@ -55,7 +56,7 @@ class PartiesHandler extends HandlerManager {
         try {
             
         } catch(error) {
-            req.status(500).json({massage: "Internal Server Error"});
+            req.status(httpStatus.INTERNAL_SERVER_ERROR).json({massage: "Internal Server Error"});
         }
     }
 
@@ -113,9 +114,9 @@ class PartiesHandler extends HandlerManager {
         try {
             const result = await usersSchema.bulkWrite(bulkOps);
 
-            res.status(200).json({massage: "update was completed"});
+            res.status(httpStatus.OK).json({massage: "update was completed"});
         } catch (error) {
-            res.status(500).json({ message: 'Error performing operation', error });
+            res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Error performing operation', error });
         }
         
     }
