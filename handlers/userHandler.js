@@ -7,6 +7,8 @@ const mongoConnection = require('../config/mongoConnection');
 //////const connectionModel = ConnectionsSchemaModel.getModel();
 const roles = require('../roles');
 const HttpStatus = require('../enums/httpStatus');
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
 class UserHandler extends HandlerManager {
     constructor() {
@@ -171,30 +173,46 @@ class UserHandler extends HandlerManager {
                     $match: {
                         $and: [
                             {password: password},
-                            {$or: [
-                                {userName: name},
-                                {mail: name}
+                            {userName: name}
+                            /*{$or: [
+                                {userName: name}//,
+                                //{mail: name}
                                 ]
-                            }
+                            }*/
                         ]
                     }
                 }
             ]);
-            /*const exists = await usersSchema.findOne({
-                $and: [
-                    {password: password},
-                    {$or: [
-                        {userName: name},
-                        {mail: name}
-                        ]
-                    }
-                ]
-            }).exec();*/
 
 
-            console.log(exists.length);
+            console.log(exists[0].userName);
             if (exists.length) {
-                res.status(HttpStatus.OK).json({message: "can login"});
+                //creating jwt
+                const access_token = jwt.sign(
+                    { userName: exists[0].userName},
+                    process.env.ACCESS_TOKEN_SECRET,
+                    { expiresIn: '30s' }//need to be something like 5-15 m 
+                );
+
+                const refresh_token = jwt.sign(
+                    { userName: exists[0].userName},
+                    process.env.REFRESH_TOKEN_SECRET,
+                    { expiresIn: '5m' }//need to be more then 1 day
+                );
+                
+                //adding it to the user data in the db
+                const updateAct = await usersSchema.updateOne(
+                    {userName: exists[0].userName},
+                    {$set: {refreshToken: refresh_token}},
+                    {runValidators: true});
+
+                if(!updateAct.acknowledged) {
+                    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({message: "could not update the user"});
+                }
+
+                //sending the token to the client
+                res.cookie('jwt', refresh_token, { httpOnly: true, maxAge: 5 * 60 * 1000});//cookie will be live for 5m
+                res.status(HttpStatus.OK).json({accessToken: access_token});//need to save in memory(client side)
             } else {
                 res.status(HttpStatus.NOT_FOUND).json({message: "user does not exists"});
             }

@@ -50,6 +50,10 @@ class UsersSchemaModel extends SchemaModelManager {
                         score: {type: Number, required: true}    // User's score in the party, 
                         }),
                     default: {}
+                },
+                refreshToken: {
+                    type: Object,
+                    default: null
                 }
             });
         }
